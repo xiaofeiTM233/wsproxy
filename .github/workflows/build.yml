@@ -45,6 +45,6 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
-          context:./bin
+          context: ./bin
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/wsproxy:${{ inputs.version }}
