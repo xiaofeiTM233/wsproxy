@@ -1,0 +1,50 @@
+name: Push to GHCR
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Docker Version'
+        required: false
+        default: '2.3.1'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Move wsproxy to bin directory
+        run: |
+          mv wsproxy ../bin/
+          cd ../bin/
+
+      - name: Create Dockerfile
+        run: |
+          cat > Dockerfile << EOF
+          FROM busybox
+          WORKDIR /
+          COPY wsproxy /
+
+          EXPOSE 1443
+          LABEL org.opencontainers.image.authors="YWJT"
+          LABEL org.opencontainers.image.version="${{ inputs.version }}"
+
+          ENTRYPOINT ["./wsproxy"]
+          CMD ["-h"]
+          EOF
+
+      - name: Login to GHCR
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context:./bin
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/wsproxy:${{ inputs.version }}
